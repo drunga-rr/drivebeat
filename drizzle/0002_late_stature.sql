@@ -1,0 +1,1 @@
+ALTER TABLE `googleDriveFiles` ADD CONSTRAINT `googleDriveFiles_user_drive_unique` UNIQUE(`userId`,`driveFileId`);

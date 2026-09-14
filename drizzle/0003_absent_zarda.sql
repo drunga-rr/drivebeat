@@ -1,0 +1,1 @@
+ALTER TABLE `googleDriveFiles` ADD `parentDriveFolderName` varchar(512);
