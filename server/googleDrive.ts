@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import type { Express, Request, Response } from "express";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -9,6 +9,7 @@ const STATE_COOKIE = "drivebeat_google_state";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const STATE_TTL_MS = 10 * 60 * 1000;
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+const APK_KEY_ENV = "DRIVEBEAT_APK_KEY";
 
 function secretKey() {
   const secret = process.env.JWT_SECRET || process.env.DRIVEBEAT_SESSION_SECRET;
@@ -66,7 +67,11 @@ function getRedirectUri(req: Request) {
 
 function getStatePayload(value: string) {
   try {
-    const payload = JSON.parse(decrypt(value)) as { nonce?: string; createdAt?: number };
+    const payload = JSON.parse(decrypt(value)) as {
+  nonce?: string;
+  createdAt?: number;
+  isAndroidApp?: boolean;
+};
     if (!payload.nonce || !payload.createdAt || Date.now() - payload.createdAt > STATE_TTL_MS) return null;
     return payload;
   } catch {
@@ -401,11 +406,111 @@ export async function listCloudLibrary(req: Request, res: Response) {
   return files;
 }
 
+function getApkKey() {
+  const value = process.env[APK_KEY_ENV];
+  if (!value || value.length < 32) {
+    throw new Error(`${APK_KEY_ENV} must contain at least 32 characters`);
+  }
+  return value;
+}
+
+function isValidApkKey(req: Request) {
+  const provided = req.get("x-drivebeat-apk-key");
+  const expected = process.env[APK_KEY_ENV];
+
+  if (!provided || !expected) return false;
+
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (providedBuffer.length !== expectedBuffer.length) return false;
+
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
 export function registerGoogleDriveRoutes(app: Express) {
+	app.get("/api/auth/apk/login", async (req, res) => {
+  try {
+    const configuredToken = process.env.DRIVEBEAT_APK_TOKEN;
+    const receivedToken = req.get("x-drivebeat-apk-token");
+
+    if (!configuredToken || !receivedToken) {
+      res.status(401).json({ error: "apk_auth_not_configured" });
+      return;
+    }
+
+    const expected = Buffer.from(configuredToken);
+    const received = Buffer.from(receivedToken);
+
+    if (
+      expected.length !== received.length ||
+      !crypto.timingSafeEqual(expected, received)
+    ) {
+      res.status(401).json({ error: "invalid_apk_token" });
+      return;
+    }
+
+    /*
+     * Por enquanto a autenticação do APK precisa de uma sessão Google
+     * previamente criada no servidor. A próxima etapa será ligar essa
+     * credencial à sua conta Google.
+     */
+    res.status(501).json({
+      error: "apk_auth_not_provisioned",
+      message: "APK token accepted, but Google session is not provisioned yet",
+    });
+  } catch (error) {
+    console.error("[APK Auth] login failed", error);
+    res.status(500).json({ error: "apk_auth_failed" });
+  }
+});
   app.get("/api/auth/google", (req, res) => {
+	  app.get("/api/auth/apk/login", async (req, res) => {
+  try {
+    const configuredToken = process.env.DRIVEBEAT_APK_TOKEN;
+    const receivedToken = req.get("x-drivebeat-apk-token");
+
+    if (!configuredToken || !receivedToken) {
+      res.status(401).json({ error: "apk_auth_not_configured" });
+      return;
+    }
+
+    const expected = Buffer.from(configuredToken);
+    const received = Buffer.from(receivedToken);
+
+    if (
+      expected.length !== received.length ||
+      !crypto.timingSafeEqual(expected, received)
+    ) {
+      res.status(401).json({ error: "invalid_apk_token" });
+      return;
+    }
+
+    /*
+     * Por enquanto a autenticação do APK precisa de uma sessão Google
+     * previamente criada no servidor. A próxima etapa será ligar essa
+     * credencial à sua conta Google.
+     */
+    res.status(501).json({
+      error: "apk_auth_not_provisioned",
+      message: "APK token accepted, but Google session is not provisioned yet",
+    });
+  } catch (error) {
+    console.error("[APK Auth] login failed", error);
+    res.status(500).json({ error: "apk_auth_failed" });
+  }
+});
     try {
       const nonce = crypto.randomBytes(24).toString("base64url");
-      const state = encrypt(JSON.stringify({ nonce, createdAt: Date.now() }));
+      const isAndroidApp = req.query.android === "1";
+
+const state = encrypt(
+  JSON.stringify({
+    nonce,
+    createdAt: Date.now(),
+    isAndroidApp,
+  })
+);
       res.cookie(STATE_COOKIE, state, { ...cookieOptions(req), maxAge: STATE_TTL_MS });
       const params = new URLSearchParams({
         client_id: getClientId(),
@@ -430,7 +535,8 @@ export function registerGoogleDriveRoutes(app: Express) {
     res.clearCookie(STATE_COOKIE, { ...cookieOptions(req) });
     const expected = stateCookie ? getStatePayload(stateCookie) : null;
     const received = state ? getStatePayload(state) : null;
-    if (!code || !state || !expected || !received || expected.nonce !== received.nonce) {
+    const isAndroidApp = Boolean(received?.isAndroidApp); 
+	if (!code || !state || !expected || !received || expected.nonce !== received.nonce) {
       res.status(403).json({ error: "invalid_google_oauth_state" });
       return;
     }
@@ -449,7 +555,12 @@ export function registerGoogleDriveRoutes(app: Express) {
         expiresAt: Date.now() + SESSION_TTL_MS,
       };
       writeSession(res, req, session);
-      res.redirect("/");
+
+if (isAndroidApp) {
+  res.redirect("drivebeat://oauth");
+} else {
+  res.redirect("/");
+}
     } catch (error) {
       console.error("[Google OAuth] callback failed", error);
       res.redirect(`/?google=error&reason=${encodeURIComponent(error instanceof Error ? error.message : "callback_failed")}`);
