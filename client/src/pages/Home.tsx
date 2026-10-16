@@ -726,7 +726,7 @@ export default function Home() {
       <input ref={filesRef} type="file" accept=".mp3,audio/mpeg" multiple className="hidden" onChange={addFiles} />
       <input ref={folderRef} type="file" accept=".mp3,audio/mpeg" multiple className="hidden" {...({ webkitdirectory: "", directory: "" } as Record<string, string>)} onChange={addFiles} />
       <aside style={{ touchAction: "pan-y", overscrollBehaviorY: "contain" }} className={cn("sidebar fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col overflow-y-auto overscroll-y-contain border-r border-white/[0.06] bg-[#0d0f16] px-5 py-7 transition-transform duration-200 lg:translate-x-0", mobileMenu ? "translate-x-0" : "-translate-x-full")}>
-        <div className="mb-2 flex items-center justify-between px-2">
+        <div className="mb-11 flex items-center justify-between px-2">
           <button className="flex items-center gap-3" onClick={() => { setActiveNav("Início"); setQuery(""); setFolderFilter(null); }} aria-label="Ir para início"><span className="brand-mark"><span /><span /><span /></span><span className="font-display text-[21px] font-bold tracking-[-0.04em]">Drivebeat</span></button>
           <button className="rounded-lg p-1 text-white/50 hover:bg-white/5 hover:text-white lg:hidden" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X size={19} /></button>
         </div>
