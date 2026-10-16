@@ -55,3 +55,29 @@ button, input { font: inherit; }
 .player-cover { position: relative; display: flex; height: 44px; width: 44px; flex-shrink: 0; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; } .cover-sun { height: 15px; width: 15px; border-radius: 50%; background: rgba(255,255,255,.75); box-shadow: 0 0 19px rgba(255,255,255,.6); }
 .player-range, .volume-range { height: 3px; appearance: none; border-radius: 9px; background: linear-gradient(90deg, #a78bfa 0 32%, rgba(255,255,255,.15) 32%); outline: none; } .player-range { width: 100%; } .volume-range { width: 75px; background: linear-gradient(90deg, #fff 0 76%, rgba(255,255,255,.15) 76%); } .player-range::-webkit-slider-thumb, .volume-range::-webkit-slider-thumb { height: 9px; width: 9px; appearance: none; border-radius: 50%; background: white; cursor: pointer; }
 @media (max-width: 639px) { .hero-disc, .hero-orbit { opacity: .25; right: -65px; } .hero-panel { min-height: 330px; } .player-bar { padding-bottom: calc(.75rem + env(safe-area-inset-bottom)); } }
+
+
+
+/* ===== Ajustes de espaçamento — DriveBeat desktop ===== */
+@media (min-width: 1024px) {
+  /* Reduz em 90% o espaço entre o menu superior e a coleção */
+  .hero-panel {
+    margin-bottom: 0.1em;
+  }
+
+  /* Reduz em 50% o espaçamento interno dos itens do menu lateral */
+  .nav-item {
+    padding-top: 5.5px;
+    padding-bottom: 5.5px;
+  }
+
+  /* Reduz em 50% o espaçamento entre os botões das playlists */
+  .playlist-item,
+  .playlist-button {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
+
