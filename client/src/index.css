@@ -76,7 +76,7 @@ button, input { font: inherit; }
   .playlist-button {
     margin-top: 0;
     margin-bottom: 0;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding-top: 1px;
+    padding-bottom: 1px;
   }
 }
