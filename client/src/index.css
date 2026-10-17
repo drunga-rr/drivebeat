@@ -80,9 +80,3 @@ button, input { font: inherit; }
     padding-bottom: 5px;
   }
 }
-.playlist-card {
-  aspect-ratio: auto !important;
-  height: 64px !important;
-  min-height: 0 !important;
-  padding: 8px !important;
-}
