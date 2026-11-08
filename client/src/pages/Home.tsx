@@ -3,6 +3,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useEffect } from "react";
 import {
   Clock3,
   Cloud,
@@ -102,6 +103,38 @@ function loadPlaylists(): Playlist[] {
     return Array.isArray(parsed) ? parsed.filter((p) => p && typeof p.id === "string" && typeof p.name === "string" && Array.isArray(p.trackIds)) : [];
   } catch { return []; }
 }
+useEffect(() => {
+  let wakeLock: any = null;
+
+  const requestWakeLock = async () => {
+    if (!("wakeLock" in navigator)) return;
+    if (document.visibilityState !== "visible") return;
+
+    try {
+      wakeLock = await (navigator as any).wakeLock.request("screen");
+    } catch (error) {
+      console.log("Não foi possível manter a tela ligada:", error);
+    }
+  };
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      requestWakeLock();
+    } else {
+      wakeLock?.release();
+      wakeLock = null;
+    }
+  };
+
+  requestWakeLock();
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    wakeLock?.release();
+  };
+}, []);
 
 function loadFavoriteIds() {
   try {
