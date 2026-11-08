@@ -106,33 +106,49 @@ function loadPlaylists(): Playlist[] {
 useEffect(() => {
   let wakeLock: any = null;
 
-  const requestWakeLock = async () => {
-    if (!("wakeLock" in navigator)) return;
+  const manterTelaLigada = async () => {
+    if (!("wakeLock" in navigator)) {
+      console.log("Wake Lock não suportado");
+      return;
+    }
+
     if (document.visibilityState !== "visible") return;
 
     try {
-      wakeLock = await (navigator as any).wakeLock.request("screen");
-    } catch (error) {
-      console.log("Não foi possível manter a tela ligada:", error);
+      if (!wakeLock || wakeLock.released) {
+        wakeLock = await (navigator as any).wakeLock.request("screen");
+        console.log("Tela mantida ligada!");
+
+        wakeLock.addEventListener("release", () => {
+          console.log("Wake Lock liberado");
+        });
+      }
+    } catch (erro) {
+      console.log("Erro ao manter tela ligada:", erro);
     }
   };
 
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === "visible") {
-      requestWakeLock();
-    } else {
-      wakeLock?.release();
-      wakeLock = null;
-    }
+  const aoVoltarParaPagina = () => {
+    manterTelaLigada();
   };
 
-  requestWakeLock();
+  document.addEventListener("visibilitychange", aoVoltarParaPagina);
+  window.addEventListener("focus", manterTelaLigada);
+  document.addEventListener("click", manterTelaLigada);
+  document.addEventListener("touchstart", manterTelaLigada);
 
-  document.addEventListener("visibilitychange", handleVisibilityChange);
+  manterTelaLigada();
 
   return () => {
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-    wakeLock?.release();
+    document.removeEventListener("visibilitychange", aoVoltarParaPagina);
+    window.removeEventListener("focus", manterTelaLigada);
+    document.removeEventListener("click", manterTelaLigada);
+    document.removeEventListener("touchstart", manterTelaLigada);
+
+    if (wakeLock) {
+      wakeLock.release();
+      wakeLock = null;
+    }
   };
 }, []);
 
